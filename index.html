@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rugby Stats</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0a0f0d; --surface:#111814; --card:#161e1a; --border:#1f2e27;
+  --green:#2aff7a; --gdim:#177a40; --red:#ff3d5a; --rdim:#7a1a2a;
+  --yellow:#ffd84a; --ydim:#5e4700; --blue:#4af0ff; --text:#e8f0eb; --muted:#4a6050;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif;min-height:100vh;}
+header{background:var(--surface);border-bottom:3px solid var(--green);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+header h1{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:1.4rem;letter-spacing:2px;text-transform:uppercase;color:var(--green);}
+.timer-wrap{display:flex;align-items:center;gap:7px;}
+#tdisp{font-family:'Barlow Condensed',sans-serif;font-size:1.4rem;font-weight:700;color:var(--yellow);letter-spacing:2px;min-width:56px;text-align:center;}
+.btn-t{background:none;border:1.5px solid var(--muted);color:var(--text);border-radius:6px;padding:5px 10px;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-size:0.85rem;font-weight:700;transition:all 0.15s;}
+.btn-t:hover{border-color:var(--yellow);color:var(--yellow);}
+.btn-t.on{border-color:var(--green);color:var(--green);}
+.tabs{display:flex;background:var(--surface);border-bottom:2px solid var(--border);overflow-x:auto;-webkit-overflow-scrolling:touch;}
+.tabs::-webkit-scrollbar{display:none;}
+.tab{flex:1;min-width:68px;padding:10px 3px;text-align:center;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-size:0.75rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);border-bottom:3px solid transparent;transition:all 0.15s;white-space:nowrap;}
+.tab:hover{color:var(--text);}
+.tab.on{color:var(--green);border-bottom-color:var(--green);}
+.sec{display:none;padding:14px;}
+.sec.on{display:block;}
+.flash{position:fixed;top:64px;left:50%;transform:translateX(-50%) translateY(-8px);background:var(--green);color:#0a0f0d;padding:7px 18px;border-radius:20px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:0.88rem;opacity:0;pointer-events:none;transition:opacity 0.2s,transform 0.2s;z-index:999;}
+.flash.on{opacity:1;transform:translateX(-50%) translateY(0);}
+.card{background:var(--card);border:1.5px solid var(--border);border-radius:12px;padding:14px;margin-bottom:12px;}
+.card h3{font-family:'Barlow Condensed',sans-serif;font-size:1rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:12px;}
+.btn-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.btn-row.three{grid-template-columns:1fr 1fr 1fr;}
+.sbtn{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:14px 8px;border-radius:10px;border:none;cursor:pointer;transition:transform 0.1s,filter 0.1s;gap:4px;}
+.sbtn:active{transform:scale(0.94);filter:brightness(1.2);}
+.sbtn.g{background:var(--gdim);} .sbtn.r{background:var(--rdim);} .sbtn.y{background:var(--ydim);}
+.s-icon{font-size:1.1rem;}
+.s-count{font-family:'Barlow Condensed',sans-serif;font-size:2.2rem;font-weight:900;line-height:1;}
+.sbtn.g .s-count{color:var(--green);} .sbtn.r .s-count{color:var(--red);} .sbtn.y .s-count{color:var(--yellow);}
+.s-lbl{font-family:'Barlow Condensed',sans-serif;font-size:0.72rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,0.6);}
+.undo-row{display:flex;justify-content:flex-end;margin-top:8px;}
+.btn-undo{background:none;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:4px 12px;cursor:pointer;font-size:0.75rem;transition:all 0.15s;}
+.btn-undo:hover{border-color:var(--red);color:var(--red);}
+.pbar{height:6px;border-radius:3px;background:var(--border);margin-top:10px;overflow:hidden;}
+.pbar-fill{height:100%;border-radius:3px;background:var(--green);transition:width 0.4s;}
+.plbl{font-size:0.7rem;color:var(--muted);text-align:right;margin-top:3px;}
+.log{margin-top:10px;max-height:110px;overflow-y:auto;}
+.log-item{display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid var(--border);font-size:0.78rem;}
+.badge{padding:2px 8px;border-radius:4px;font-size:0.7rem;font-weight:700;font-family:'Barlow Condensed',sans-serif;letter-spacing:1px;}
+.badge.g{background:#0d3d20;color:var(--green);} .badge.r{background:#3d0d14;color:var(--red);} .badge.y{background:#3d2e00;color:var(--yellow);}
+.m-total{font-family:'Barlow Condensed',sans-serif;font-size:2.8rem;font-weight:900;color:var(--green);text-align:center;margin-bottom:12px;}
+.m-total small{font-size:1rem;font-weight:400;color:var(--muted);margin-left:6px;}
+.m-row{display:flex;gap:10px;}
+.m-row input{flex:1;background:var(--surface);border:1.5px solid var(--border);color:var(--text);border-radius:8px;padding:10px 14px;font-size:1.1rem;font-family:'Barlow',sans-serif;text-align:center;transition:border-color 0.15s;}
+.m-row input:focus{outline:none;border-color:var(--green);}
+.m-row input::-webkit-inner-spin-button{-webkit-appearance:none;}
+.btn-madd{background:var(--gdim);border:none;color:#fff;border-radius:8px;padding:10px 20px;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-size:1rem;font-weight:700;transition:opacity 0.15s;}
+.btn-madd:hover{opacity:0.85;}
+/* EQUIPO */
+.team-setup{background:var(--card);border:1.5px solid var(--border);border-radius:12px;padding:14px;margin-bottom:12px;}
+.team-setup h3{font-family:'Barlow Condensed',sans-serif;font-size:0.85rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;}
+.inp-row{display:flex;gap:8px;margin-bottom:8px;}
+.inp-num{width:54px;background:var(--surface);border:1.5px solid var(--border);color:var(--text);border-radius:8px;padding:8px 4px;font-size:1rem;font-family:'Barlow Condensed',sans-serif;font-weight:700;text-align:center;}
+.inp-num::-webkit-inner-spin-button{-webkit-appearance:none;}
+.inp-name{flex:1;background:var(--surface);border:1.5px solid var(--border);color:var(--text);border-radius:8px;padding:8px 12px;font-size:0.95rem;font-family:'Barlow',sans-serif;}
+.inp-num:focus,.inp-name:focus{outline:none;border-color:var(--green);}
+.inp-num::placeholder,.inp-name::placeholder{color:var(--muted);}
+.btn-padd{background:var(--gdim);border:none;color:#fff;border-radius:8px;padding:8px 14px;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-size:1.2rem;font-weight:700;}
+.btn-fill{width:100%;padding:8px;background:none;border:1.5px dashed var(--border);border-radius:8px;color:var(--muted);font-family:'Barlow Condensed',sans-serif;font-size:0.8rem;font-weight:700;letter-spacing:1px;cursor:pointer;margin-top:4px;transition:all 0.15s;}
+.btn-fill:hover{border-color:var(--green);color:var(--green);}
+.player-list{display:flex;flex-direction:column;gap:10px;}
+.pcard{background:var(--card);border:1.5px solid var(--border);border-radius:12px;padding:10px 12px;display:flex;align-items:center;gap:10px;}
+.pcard.subbed{border-color:var(--yellow);opacity:0.55;}
+.pnum{font-family:'Barlow Condensed',sans-serif;font-size:1.4rem;font-weight:900;color:var(--green);min-width:26px;text-align:center;}
+.pcard.subbed .pnum{color:var(--muted);}
+.pinfo{flex:1;min-width:0;}
+.pname{font-family:'Barlow Condensed',sans-serif;font-size:0.95rem;font-weight:700;letter-spacing:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.pcard.subbed .pname{text-decoration:line-through;color:var(--muted);}
+.psub-lbl{font-size:0.68rem;color:var(--yellow);font-weight:600;margin-top:2px;}
+.peff{font-size:0.68rem;color:var(--muted);margin-top:2px;}
+.ptackles{display:flex;align-items:center;gap:5px;}
+.ptbtn{display:flex;flex-direction:column;align-items:center;justify-content:center;width:42px;height:46px;border-radius:8px;border:none;cursor:pointer;transition:transform 0.1s;gap:1px;}
+.ptbtn:active{transform:scale(0.92);}
+.ptbtn.g{background:var(--gdim);} .ptbtn.r{background:var(--rdim);}
+.pt-count{font-family:'Barlow Condensed',sans-serif;font-size:1.2rem;font-weight:900;}
+.ptbtn.g .pt-count{color:var(--green);} .ptbtn.r .pt-count{color:var(--red);}
+.pt-lbl{font-family:'Barlow Condensed',sans-serif;font-size:0.52rem;font-weight:700;text-transform:uppercase;color:rgba(255,255,255,0.55);}
+.btn-cambio{background:var(--ydim);border:1.5px solid #8a6200;color:var(--yellow);border-radius:8px;padding:5px 8px;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-size:0.72rem;font-weight:700;text-transform:uppercase;transition:all 0.15s;white-space:nowrap;}
+.btn-del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem;padding:4px;line-height:1;transition:color 0.15s;}
+.btn-del:hover{color:var(--red);}
+/* MODAL */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.78);z-index:200;align-items:flex-end;justify-content:center;}
+.overlay.on{display:flex;}
+.modal{background:var(--surface);border:1.5px solid var(--border);border-radius:16px 16px 0 0;padding:20px 16px 36px;width:100%;max-width:480px;animation:slideUp 0.22s ease;}
+@keyframes slideUp{from{transform:translateY(50px);opacity:0;}to{transform:none;opacity:1;}}
+.modal h3{font-family:'Barlow Condensed',sans-serif;font-size:1.1rem;font-weight:900;letter-spacing:2px;text-transform:uppercase;color:var(--yellow);margin-bottom:6px;text-align:center;}
+.modal-sub{text-align:center;font-size:0.85rem;color:var(--muted);margin-bottom:14px;}
+.modal-lbl{font-size:0.72rem;font-weight:600;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;}
+.modal-inp-row{display:flex;gap:8px;margin-bottom:12px;}
+.modal-inp-num{width:60px;background:var(--bg);border:1.5px solid var(--border);color:var(--text);border-radius:8px;padding:10px 4px;font-size:1rem;font-family:'Barlow Condensed',sans-serif;font-weight:700;text-align:center;}
+.modal-inp-num::-webkit-inner-spin-button{-webkit-appearance:none;}
+.modal-inp-name{flex:1;background:var(--bg);border:1.5px solid var(--border);color:var(--text);border-radius:8px;padding:10px 12px;font-size:1rem;font-family:'Barlow',sans-serif;}
+.modal-inp-num:focus,.modal-inp-name:focus{outline:none;border-color:var(--yellow);}
+.modal-inp-num::placeholder,.modal-inp-name::placeholder{color:var(--muted);}
+.btn-ok{width:100%;padding:13px;background:var(--ydim);border:none;border-radius:10px;color:var(--yellow);font-family:'Barlow Condensed',sans-serif;font-size:1rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:opacity 0.15s;margin-bottom:8px;}
+.btn-ok:hover{opacity:0.85;}
+.btn-cancel{width:100%;padding:11px;background:none;border:1.5px solid var(--border);border-radius:10px;color:var(--muted);font-family:'Barlow Condensed',sans-serif;font-size:0.9rem;font-weight:700;letter-spacing:1px;cursor:pointer;transition:border-color 0.15s;}
+.btn-cancel:hover{border-color:var(--red);color:var(--red);}
+/* CAMBIOS LOG */
+.cambios-wrap{margin-top:14px;background:var(--card);border:1.5px solid var(--border);border-radius:12px;padding:12px 14px;}
+.cambios-wrap h3{font-family:'Barlow Condensed',sans-serif;font-size:0.8rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;}
+.cambio-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);font-size:0.8rem;}
+.cambio-row:last-child{border-bottom:none;}
+.c-out{color:var(--red);font-weight:700;font-family:'Barlow Condensed',sans-serif;}
+.c-in{color:var(--green);font-weight:700;font-family:'Barlow Condensed',sans-serif;}
+.c-arr{color:var(--muted);}
+.c-time{color:var(--muted);font-size:0.72rem;margin-left:auto;}
+/* RESUMEN */
+.match-inputs{display:flex;flex-direction:column;gap:10px;margin-bottom:14px;}
+.minp-grp{display:flex;flex-direction:column;gap:4px;}
+.minp-lbl{font-size:0.72rem;font-weight:600;color:var(--muted);letter-spacing:1px;text-transform:uppercase;}
+.minp{background:var(--surface);border:1.5px solid var(--border);color:var(--text);border-radius:8px;padding:10px 14px;font-size:0.95rem;font-family:'Barlow',sans-serif;transition:border-color 0.15s;}
+.minp:focus{outline:none;border-color:var(--green);}
+.minp::placeholder{color:var(--muted);}
+.sum-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+.sum-card{background:var(--card);border:1.5px solid var(--border);border-radius:10px;padding:12px;}
+.sum-title{font-family:'Barlow Condensed',sans-serif;font-size:0.72rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;text-align:center;}
+.sum-row{display:flex;justify-content:space-around;}
+.sum-val{display:flex;flex-direction:column;align-items:center;gap:2px;}
+.sum-v{font-family:'Barlow Condensed',sans-serif;font-size:1.7rem;font-weight:900;line-height:1;}
+.sum-l{font-size:0.62rem;color:var(--muted);font-weight:600;letter-spacing:1px;text-transform:uppercase;}
+.sum-val.go .sum-v{color:var(--green);} .sum-val.ba .sum-v{color:var(--red);}
+.sum-val.ne .sum-v{color:var(--yellow);} .sum-val.in .sum-v{color:var(--blue);}
+.btn-save{width:100%;padding:14px;background:var(--gdim);border:none;border-radius:10px;color:#fff;font-family:'Barlow Condensed',sans-serif;font-size:1.1rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:opacity 0.15s;margin-bottom:10px;}
+.btn-save:hover{opacity:0.85;}
+.btn-exp{width:100%;padding:12px;background:none;border:1.5px solid var(--gdim);border-radius:10px;color:var(--green);font-family:'Barlow Condensed',sans-serif;font-size:1rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:all 0.15s;margin-bottom:10px;}
+.btn-exp:hover{background:var(--gdim);color:#fff;}
+.btn-rst{width:100%;padding:12px;background:none;border:1.5px solid var(--rdim);border-radius:10px;color:var(--red);font-family:'Barlow Condensed',sans-serif;font-size:1rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:all 0.15s;}
+.btn-rst:hover{background:var(--rdim);}
+/* HISTORIAL */
+.hist-empty{text-align:center;padding:40px 20px;color:var(--muted);font-family:'Barlow Condensed',sans-serif;font-size:1rem;letter-spacing:1px;}
+.hist-card{background:var(--card);border:1.5px solid var(--border);border-radius:12px;padding:14px;margin-bottom:12px;cursor:pointer;transition:border-color 0.15s;}
+.hist-card:hover{border-color:var(--green);}
+.hist-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;}
+.hist-match{font-family:'Barlow Condensed',sans-serif;font-size:1.1rem;font-weight:900;letter-spacing:1px;color:var(--text);}
+.hist-date{font-size:0.75rem;color:var(--muted);}
+.hist-pills{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;}
+.pill{padding:3px 10px;border-radius:20px;font-family:'Barlow Condensed',sans-serif;font-size:0.72rem;font-weight:700;letter-spacing:1px;}
+.pill.g{background:#0d3d20;color:var(--green);}
+.pill.r{background:#3d0d14;color:var(--red);}
+.pill.y{background:#3d2e00;color:var(--yellow);}
+.pill.b{background:#04242d;color:var(--blue);}
+.hist-actions{display:flex;gap:8px;margin-top:10px;}
+.btn-hist-del{background:none;border:1px solid var(--rdim);color:var(--red);border-radius:6px;padding:5px 12px;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-size:0.75rem;font-weight:700;letter-spacing:1px;transition:all 0.15s;}
+.btn-hist-del:hover{background:var(--rdim);}
+.btn-hist-exp{background:none;border:1px solid var(--gdim);color:var(--green);border-radius:6px;padding:5px 12px;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-size:0.75rem;font-weight:700;letter-spacing:1px;transition:all 0.15s;}
+.btn-hist-exp:hover{background:var(--gdim);color:#fff;}
+/* DETAIL MODAL */
+.detail-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:300;overflow-y:auto;padding:20px 16px;}
+.detail-overlay.on{display:block;}
+.detail-box{background:var(--surface);border:1.5px solid var(--border);border-radius:16px;padding:20px;max-width:480px;margin:0 auto;}
+.detail-title{font-family:'Barlow Condensed',sans-serif;font-size:1.2rem;font-weight:900;color:var(--green);margin-bottom:4px;letter-spacing:1px;}
+.detail-date{font-size:0.8rem;color:var(--muted);margin-bottom:16px;}
+.detail-section{margin-bottom:14px;}
+.detail-section h4{font-family:'Barlow Condensed',sans-serif;font-size:0.8rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;border-bottom:1px solid var(--border);padding-bottom:4px;}
+.drow{display:flex;justify-content:space-between;padding:4px 0;font-size:0.85rem;border-bottom:1px solid var(--border);}
+.drow:last-child{border-bottom:none;}
+.drow-lbl{color:var(--muted);}
+.drow-val{font-family:'Barlow Condensed',sans-serif;font-weight:700;}
+.drow-val.g{color:var(--green);} .drow-val.r{color:var(--red);} .drow-val.y{color:var(--yellow);}
+.btn-close-detail{width:100%;padding:13px;background:var(--gdim);border:none;border-radius:10px;color:#fff;font-family:'Barlow Condensed',sans-serif;font-size:1rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;cursor:pointer;margin-top:16px;}
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-track{background:var(--surface);}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+</style>
+</head>
+<body>
+<header>
+  <h1>🏉 Rugby Stats</h1>
+  <div class="timer-wrap">
+    <span id="tdisp">00:00</span>
+    <button class="btn-t" id="tbtn" onclick="toggleTimer()">▶</button>
+    <button class="btn-t" onclick="resetTimer()">↺</button>
+  </div>
+</header>
+<div class="tabs">
+  <div class="tab on"  onclick="goTab('equipo')">🏉 Equipo</div>
+  <div class="tab"     onclick="goTab('tackles')">Tackles</div>
+  <div class="tab"     onclick="goTab('rucks')">Rucks</div>
+  <div class="tab"     onclick="goTab('lines')">Lines</div>
+  <div class="tab"     onclick="goTab('pases')">Pases</div>
+  <div class="tab"     onclick="goTab('metros')">Metros</div>
+  <div class="tab"     onclick="goTab('penales')">Penales</div>
+  <div class="tab"     onclick="goTab('scrum')">Scrum</div>
+  <div class="tab"     onclick="goTab('turnovers')">Turnovers</div>
+  <div class="tab"     onclick="goTab('resumen')">Resumen</div>
+  <div class="tab"     onclick="goTab('historial')">Historial</div>
+</div>
+<div class="flash" id="flash"></div>
+
+<!-- EQUIPO -->
+
+<div class="sec on" id="sec-equipo">
+  <div class="team-setup">
+    <h3>Agregar jugador</h3>
+    <div class="inp-row">
+      <input class="inp-num"  id="p-num"  type="number" placeholder="#">
+      <input class="inp-name" id="p-name" type="text"   placeholder="Nombre">
+      <button class="btn-padd" id="btn-add-player">+</button>
+    </div>
+    <button class="btn-fill" id="btn-fill15">Completar plantel básico (1–15)</button>
+  </div>
+  <div class="player-list" id="player-list"></div>
+  <div class="cambios-wrap" id="cambios-wrap" style="display:none">
+    <h3>🔄 Registro de cambios</h3>
+    <div id="cambios-list"></div>
+  </div>
+</div>
+
+<!-- MODAL CAMBIO -->
+
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <h3>Cambio de jugador</h3>
+    <div class="modal-sub">Sale: <strong id="modal-out"></strong></div>
+    <div class="modal-lbl">Ingresa</div>
+    <div class="modal-inp-row">
+      <input class="modal-inp-num"  id="sub-num"  type="number" placeholder="#">
+      <input class="modal-inp-name" id="sub-name" type="text"   placeholder="Nombre del sustituto">
+    </div>
+    <button class="btn-ok"     id="btn-ok-cambio">Confirmar cambio</button>
+    <button class="btn-cancel" id="btn-cancel-cambio">Cancelar</button>
+  </div>
+</div>
+
+<!-- TACKLES -->
+
+<div class="sec" id="sec-tackles">
+  <div class="card">
+    <h3>💥 Tackles</h3>
+    <div class="btn-row">
+      <button class="sbtn g" id="btn-t-hecho"><span class="s-icon">✅</span><span class="s-count" id="n-t-h">0</span><span class="s-lbl">Hechos</span></button>
+      <button class="sbtn r" id="btn-t-errado"><span class="s-icon">❌</span><span class="s-count" id="n-t-e">0</span><span class="s-lbl">Errados</span></button>
+    </div>
+    <div class="undo-row"><button class="btn-undo" id="undo-tackles">↩ Deshacer</button></div>
+    <div class="pbar"><div class="pbar-fill" id="pb-tackles" style="width:0%"></div></div>
+    <div class="plbl" id="pl-tackles">Efectividad: —</div>
+  </div>
+  <div class="log" id="log-tackles"></div>
+</div>
+
+<!-- RUCKS -->
+
+<div class="sec" id="sec-rucks">
+  <div class="card">
+    <h3>🔒 Rucks</h3>
+    <div class="btn-row">
+      <button class="sbtn g" id="btn-r-gan"><span class="s-icon">⬆️</span><span class="s-count" id="n-r-g">0</span><span class="s-lbl">Ganados</span></button>
+      <button class="sbtn r" id="btn-r-per"><span class="s-icon">⬇️</span><span class="s-count" id="n-r-p">0</span><span class="s-lbl">Perdidos</span></button>
+    </div>
+    <div class="undo-row"><button class="btn-undo" id="undo-rucks">↩ Deshacer</button></div>
+    <div class="pbar"><div class="pbar-fill" id="pb-rucks" style="width:0%"></div></div>
+    <div class="plbl" id="pl-rucks">Efectividad: —</div>
+  </div>
+  <div class="log" id="log-rucks"></div>
+</div>
+
+<!-- LINES -->
+
+<div class="sec" id="sec-lines">
+  <div class="card">
+    <h3>🚩 Line Outs</h3>
+    <div class="btn-row three">
+      <button class="sbtn g" id="btn-l-gan"><span class="s-icon">✅</span><span class="s-count" id="n-l-g">0</span><span class="s-lbl">Ganados</span></button>
+      <button class="sbtn r" id="btn-l-per"><span class="s-icon">❌</span><span class="s-count" id="n-l-p">0</span><span class="s-lbl">Perdidos</span></button>
+      <button class="sbtn y" id="btn-l-rob"><span class="s-icon">🔄</span><span class="s-count" id="n-l-r">0</span><span class="s-lbl">Robados</span></button>
+    </div>
+    <div class="undo-row"><button class="btn-undo" id="undo-lines">↩ Deshacer</button></div>
+    <div class="pbar"><div class="pbar-fill" id="pb-lines" style="width:0%"></div></div>
+    <div class="plbl" id="pl-lines">Efectividad: —</div>
+  </div>
+  <div class="log" id="log-lines"></div>
+</div>
+
+<!-- PASES -->
+
+<div class="sec" id="sec-pases">
+  <div class="card">
+    <h3>🤾 Pases</h3>
+    <div class="btn-row">
+      <button class="sbtn g" id="btn-p-comp"><span class="s-icon">✅</span><span class="s-count" id="n-p-c">0</span><span class="s-lbl">Completos</span></button>
+      <button class="sbtn r" id="btn-p-err"><span class="s-icon">❌</span><span class="s-count" id="n-p-e">0</span><span class="s-lbl">Errados</span></button>
+    </div>
+    <div class="undo-row"><button class="btn-undo" id="undo-pases">↩ Deshacer</button></div>
+    <div class="pbar"><div class="pbar-fill" id="pb-pases" style="width:0%"></div></div>
+    <div class="plbl" id="pl-pases">Efectividad: —</div>
+  </div>
+  <div class="log" id="log-pases"></div>
+</div>
+
+<!-- METROS -->
+
+<div class="sec" id="sec-metros">
+  <div class="card">
+    <h3>📏 Metros Ganados</h3>
+    <div class="m-total" id="m-total">0<small>metros</small></div>
+    <div class="m-row">
+      <input id="m-inp" type="number" placeholder="ej: 8" min="1" max="100">
+      <button class="btn-madd" id="btn-m-add">+ Agregar</button>
+    </div>
+    <div class="undo-row"><button class="btn-undo" id="undo-metros">↩ Deshacer carry</button></div>
+  </div>
+  <div class="log" id="log-metros"></div>
+</div>
+
+<!-- PENALES -->
+
+<div class="sec" id="sec-penales">
+  <div class="card">
+    <h3>⚖️ Penales</h3>
+    <div class="btn-row">
+      <button class="sbtn g" id="btn-pen-fav"><span class="s-icon">👍</span><span class="s-count" id="n-pen-f">0</span><span class="s-lbl">A favor</span></button>
+      <button class="sbtn r" id="btn-pen-con"><span class="s-icon">👎</span><span class="s-count" id="n-pen-c">0</span><span class="s-lbl">En contra</span></button>
+    </div>
+    <div class="undo-row"><button class="btn-undo" id="undo-penales">↩ Deshacer</button></div>
+  </div>
+  <div class="log" id="log-penales"></div>
+</div>
+
+<!-- SCRUM -->
+
+<div class="sec" id="sec-scrum">
+  <div class="card">
+    <h3>🏋️ Scrum</h3>
+    <div class="btn-row three">
+      <button class="sbtn g" id="btn-sc-gan"><span class="s-icon">✅</span><span class="s-count" id="n-sc-g">0</span><span class="s-lbl">Ganados</span></button>
+      <button class="sbtn r" id="btn-sc-per"><span class="s-icon">❌</span><span class="s-count" id="n-sc-p">0</span><span class="s-lbl">Perdidos</span></button>
+      <button class="sbtn y" id="btn-sc-rei"><span class="s-icon">🔄</span><span class="s-count" id="n-sc-r">0</span><span class="s-lbl">Reiniciado</span></button>
+    </div>
+    <div class="undo-row"><button class="btn-undo" id="undo-scrum">↩ Deshacer</button></div>
+    <div class="pbar"><div class="pbar-fill" id="pb-scrum" style="width:0%"></div></div>
+    <div class="plbl" id="pl-scrum">Efectividad: —</div>
+  </div>
+  <div class="card" style="margin-top:0">
+    <h3>⚖️ Penales de Scrum</h3>
+    <div class="btn-row">
+      <button class="sbtn g" id="btn-sc-pfav"><span class="s-icon">👍</span><span class="s-count" id="n-sc-pf">0</span><span class="s-lbl">A favor</span></button>
+      <button class="sbtn r" id="btn-sc-pcon"><span class="s-icon">👎</span><span class="s-count" id="n-sc-pc">0</span><span class="s-lbl">En contra</span></button>
+    </div>
+    <div class="undo-row"><button class="btn-undo" id="undo-scrum-pen">↩ Deshacer</button></div>
+  </div>
+  <div class="log" id="log-scrum"></div>
+</div>
+
+<!-- TURNOVERS -->
+
+<div class="sec" id="sec-turnovers">
+  <div class="card">
+    <h3>🔁 Turnovers</h3>
+    <div class="btn-row">
+      <button class="sbtn g" id="btn-tv-gan"><span class="s-icon">✅</span><span class="s-count" id="n-tv-g">0</span><span class="s-lbl">Ganados</span></button>
+      <button class="sbtn r" id="btn-tv-per"><span class="s-icon">❌</span><span class="s-count" id="n-tv-p">0</span><span class="s-lbl">Perdidos</span></button>
+    </div>
+    <div class="undo-row"><button class="btn-undo" id="undo-turnovers">↩ Deshacer</button></div>
+  </div>
+  <div class="log" id="log-turnovers"></div>
+</div>
+
+<!-- RESUMEN -->
+
+<div class="sec" id="sec-resumen">
+  <div class="match-inputs">
+    <div class="minp-grp"><div class="minp-lbl">Equipo</div><input class="minp" id="r-equipo" placeholder="Nombre del equipo"></div>
+    <div class="minp-grp"><div class="minp-lbl">Rival</div><input class="minp" id="r-rival" placeholder="Rival"></div>
+    <div class="minp-grp"><div class="minp-lbl">Fecha</div><input class="minp" id="r-fecha" type="date"></div>
+  </div>
+  <div class="sum-grid" id="sum-grid"></div>
+  <button class="btn-save" onclick="saveMatch()">💾 Guardar partido</button>
+  <button class="btn-exp"  onclick="exportCSV()">⬇ Exportar CSV</button>
+  <button class="btn-rst"  onclick="resetAll()">🗑 Nuevo partido</button>
+</div>
+
+<!-- HISTORIAL -->
+
+<div class="sec" id="sec-historial">
+  <div id="hist-list"></div>
+</div>
+
+<!-- DETAIL OVERLAY -->
+
+<div class="detail-overlay" id="detail-overlay">
+  <div class="detail-box">
+    <div class="detail-title" id="det-title"></div>
+    <div class="detail-date"  id="det-date"></div>
+    <div id="det-body"></div>
+    <button class="btn-close-detail" onclick="closeDetail()">Cerrar</button>
+  </div>
+</div>
+
+<script>
+// ═══ TIMER ════════════════════════════════════════════════════════════════════
+var timerSec=0,timerInt=null,timerOn=false;
+function toggleTimer(){
+  if(timerOn){clearInterval(timerInt);timerOn=false;document.getElementById('tbtn').textContent='▶';document.getElementById('tbtn').classList.remove('on');}
+  else{timerInt=setInterval(function(){timerSec++;renderTimer();},1000);timerOn=true;document.getElementById('tbtn').textContent='⏸';document.getElementById('tbtn').classList.add('on');}
+}
+function resetTimer(){clearInterval(timerInt);timerOn=false;timerSec=0;renderTimer();document.getElementById('tbtn').textContent='▶';document.getElementById('tbtn').classList.remove('on');}
+function renderTimer(){var m=String(Math.floor(timerSec/60)).padStart(2,'0');var s=String(timerSec%60).padStart(2,'0');document.getElementById('tdisp').textContent=m+':'+s;}
+function getTs(){return String(Math.floor(timerSec/60)).padStart(2,'0')+':'+String(timerSec%60).padStart(2,'0');}
+
+// ═══ TABS ═════════════════════════════════════════════════════════════════════
+var TABS=['equipo','tackles','rucks','lines','pases','metros','penales','scrum','turnovers','resumen','historial'];
+function goTab(id){
+  var secs=document.querySelectorAll('.sec'),tabs=document.querySelectorAll('.tab');
+  for(var i=0;i<secs.length;i++)secs[i].classList.remove('on');
+  for(var i=0;i<tabs.length;i++)tabs[i].classList.remove('on');
+  document.getElementById('sec-'+id).classList.add('on');
+  tabs[TABS.indexOf(id)].classList.add('on');
+  if(id==='resumen')renderSummary();
+  if(id==='historial')renderHistorial();
+}
+
+// ═══ FLASH ════════════════════════════════════════════════════════════════════
+var flashT;
+function showFlash(msg,col){
+  var f=document.getElementById('flash');
+  f.textContent=msg;
+  f.style.background=col||'var(--green)';
+  f.style.color=col?'#fff':'#0a0f0d';
+  f.classList.add('on');
+  clearTimeout(flashT);
+  flashT=setTimeout(function(){f.classList.remove('on');},1400);
+}
+
+// ═══ STAT STATE ═══════════════════════════════════════════════════════════════
+var ST={
+  tackles:{hechos:0,errados:0},
+  rucks:{ganados:0,perdidos:0},
+  lines:{ganados:0,perdidos:0,robados:0},
+  pases:{completos:0,errados:0},
+  metros:{total:0,carries:[]},
+  penales:{favor:0,contra:0},
+  scrum:{ganados:0,perdidos:0,reiniciados:0,pfavor:0,pcontra:0},
+  turnovers:{ganados:0,perdidos:0}
+};
+var HIST=[];
+
+// ═══ BUTTON WIRING ════════════════════════════════════════════════════════════
+function statRec(cat,key,cntId,label,badgeCls,logId,pbarId,plblId){
+  ST[cat][key]++;
+  HIST.push({cat:cat,key:key});
+  document.getElementById(cntId).textContent=ST[cat][key];
+  if(pbarId)updatePbar(cat,pbarId,plblId);
+  addLog(logId,label,badgeCls);
+  showFlash(label);
+  autosaveDraft();
+}
+function statUndo(cat){
+  var cntMap={'tackles-hechos':'n-t-h','tackles-errados':'n-t-e','rucks-ganados':'n-r-g','rucks-perdidos':'n-r-p','lines-ganados':'n-l-g','lines-perdidos':'n-l-p','lines-robados':'n-l-r','pases-completos':'n-p-c','pases-errados':'n-p-e','penales-favor':'n-pen-f','penales-contra':'n-pen-c','scrum-ganados':'n-sc-g','scrum-perdidos':'n-sc-p','scrum-reiniciados':'n-sc-r','scrum-pfavor':'n-sc-pf','scrum-pcontra':'n-sc-pc','turnovers-ganados':'n-tv-g','turnovers-perdidos':'n-tv-p'};
+  var pbarMap={tackles:'pb-tackles',rucks:'pb-rucks',lines:'pb-lines',pases:'pb-pases',scrum:'pb-scrum'};
+  var plblMap={tackles:'pl-tackles',rucks:'pl-rucks',lines:'pl-lines',pases:'pl-pases',scrum:'pl-scrum'};
+  for(var i=HIST.length-1;i>=0;i--){
+    if(HIST[i].cat===cat){
+      var key=HIST[i].key;
+      ST[cat][key]=Math.max(0,ST[cat][key]-1);
+      var cid=cntMap[cat+'-'+key];
+      if(cid)document.getElementById(cid).textContent=ST[cat][key];
+      if(pbarMap[cat])updatePbar(cat,pbarMap[cat],plblMap[cat]);
+      var logEl=document.getElementById('log-'+cat);
+      if(logEl&&logEl.firstChild)logEl.removeChild(logEl.firstChild);
+      HIST.splice(i,1);
+      showFlash('↩ Deshecho');
+      autosaveDraft();
+      return;
+    }
+  }
+}
+function updatePbar(cat,pbarId,plblId){
+  var g=0,t=0;
+  if(cat==='tackles'){g=ST.tackles.hechos;t=g+ST.tackles.errados;}
+  if(cat==='rucks'){g=ST.rucks.ganados;t=g+ST.rucks.perdidos;}
+  if(cat==='lines'){g=ST.lines.ganados;t=g+ST.lines.perdidos+ST.lines.robados;}
+  if(cat==='pases'){g=ST.pases.completos;t=g+ST.pases.errados;}
+  if(cat==='scrum'){g=ST.scrum.ganados;t=g+ST.scrum.perdidos+ST.scrum.reiniciados;}
+  if(!t){document.getElementById(pbarId).style.width='0%';document.getElementById(plblId).textContent='Efectividad: —';return;}
+  var p=Math.round(g/t*100);
+  document.getElementById(pbarId).style.width=p+'%';
+  document.getElementById(plblId).textContent='Efectividad: '+p+'%';
+}
+function addLog(logId,label,cls){
+  var wrap=document.getElementById(logId);if(!wrap)return;
+  var d=document.createElement('div');d.className='log-item';
+  d.innerHTML='<span class="badge '+cls+'">'+label+'</span><span style="color:var(--muted);font-size:0.72rem">'+getTs()+'</span>';
+  wrap.insertBefore(d,wrap.firstChild);
+}
+
+(function setupButtons(){
+  document.getElementById('btn-t-hecho').addEventListener('click',function(){statRec('tackles','hechos','n-t-h','✅ Tackle hecho','g','log-tackles','pb-tackles','pl-tackles');});
+  document.getElementById('btn-t-errado').addEventListener('click',function(){statRec('tackles','errados','n-t-e','❌ Tackle errado','r','log-tackles','pb-tackles','pl-tackles');});
+  document.getElementById('undo-tackles').addEventListener('click',function(){statUndo('tackles');});
+  document.getElementById('btn-r-gan').addEventListener('click',function(){statRec('rucks','ganados','n-r-g','✅ Ruck ganado','g','log-rucks','pb-rucks','pl-rucks');});
+  document.getElementById('btn-r-per').addEventListener('click',function(){statRec('rucks','perdidos','n-r-p','❌ Ruck perdido','r','log-rucks','pb-rucks','pl-rucks');});
+  document.getElementById('undo-rucks').addEventListener('click',function(){statUndo('rucks');});
+  document.getElementById('btn-l-gan').addEventListener('click',function(){statRec('lines','ganados','n-l-g','✅ Line ganado','g','log-lines','pb-lines','pl-lines');});
+  document.getElementById('btn-l-per').addEventListener('click',function(){statRec('lines','perdidos','n-l-p','❌ Line perdido','r','log-lines','pb-lines','pl-lines');});
+  document.getElementById('btn-l-rob').addEventListener('click',function(){statRec('lines','robados','n-l-r','🔄 Line robado','y','log-lines','pb-lines','pl-lines');});
+  document.getElementById('undo-lines').addEventListener('click',function(){statUndo('lines');});
+  document.getElementById('btn-p-comp').addEventListener('click',function(){statRec('pases','completos','n-p-c','✅ Pase completo','g','log-pases','pb-pases','pl-pases');});
+  document.getElementById('btn-p-err').addEventListener('click',function(){statRec('pases','errados','n-p-e','❌ Pase errado','r','log-pases','pb-pases','pl-pases');});
+  document.getElementById('undo-pases').addEventListener('click',function(){statUndo('pases');});
+  document.getElementById('btn-pen-fav').addEventListener('click',function(){statRec('penales','favor','n-pen-f','👍 Penal a favor','g','log-penales',null,null);});
+  document.getElementById('btn-pen-con').addEventListener('click',function(){statRec('penales','contra','n-pen-c','👎 Penal en contra','r','log-penales',null,null);});
+  document.getElementById('undo-penales').addEventListener('click',function(){statUndo('penales');});
+  document.getElementById('btn-sc-gan').addEventListener('click',function(){statRec('scrum','ganados','n-sc-g','✅ Scrum ganado','g','log-scrum','pb-scrum','pl-scrum');});
+  document.getElementById('btn-sc-per').addEventListener('click',function(){statRec('scrum','perdidos','n-sc-p','❌ Scrum perdido','r','log-scrum','pb-scrum','pl-scrum');});
+  document.getElementById('btn-sc-rei').addEventListener('click',function(){statRec('scrum','reiniciados','n-sc-r','🔄 Scrum reiniciado','y','log-scrum','pb-scrum','pl-scrum');});
+  document.getElementById('undo-scrum').addEventListener('click',function(){statUndo('scrum');});
+  document.getElementById('btn-sc-pfav').addEventListener('click',function(){statRec('scrum','pfavor','n-sc-pf','👍 Penal scrum a favor','g','log-scrum',null,null);});
+  document.getElementById('btn-sc-pcon').addEventListener('click',function(){statRec('scrum','pcontra','n-sc-pc','👎 Penal scrum en contra','r','log-scrum',null,null);});
+  document.getElementById('undo-scrum-pen').addEventListener('click',function(){statUndo('scrum');});
+  document.getElementById('btn-tv-gan').addEventListener('click',function(){statRec('turnovers','ganados','n-tv-g','✅ Turnover ganado','g','log-turnovers',null,null);});
+  document.getElementById('btn-tv-per').addEventListener('click',function(){statRec('turnovers','perdidos','n-tv-p','❌ Turnover perdido','r','log-turnovers',null,null);});
+  document.getElementById('undo-turnovers').addEventListener('click',function(){statUndo('turnovers');});
+  document.getElementById('btn-m-add').addEventListener('click',addMetros);
+  document.getElementById('m-inp').addEventListener('keydown',function(e){if(e.key==='Enter')addMetros();});
+  document.getElementById('undo-metros').addEventListener('click',undoMetros);
+})();
+
+// ═══ METROS ═══════════════════════════════════════════════════════════════════
+function addMetros(){
+  var inp=document.getElementById('m-inp');var v=parseInt(inp.value);
+  if(!v||v<=0)return;
+  ST.metros.total+=v;ST.metros.carries.push(v);HIST.push({cat:'metros',key:'carry'});
+  inp.value='';
+  document.getElementById('m-total').innerHTML=ST.metros.total+'<small>metros</small>';
+  addLog('log-metros','+'+v+' metros','g');showFlash('+'+v+' metros');autosaveDraft();
+}
+function undoMetros(){
+  if(!ST.metros.carries.length)return;
+  var last=ST.metros.carries.pop();ST.metros.total-=last;
+  document.getElementById('m-total').innerHTML=ST.metros.total+'<small>metros</small>';
+  var w=document.getElementById('log-metros');if(w&&w.firstChild)w.removeChild(w.firstChild);
+  showFlash('↩ Deshecho');autosaveDraft();
+}
+
+// ═══ EQUIPO ═══════════════════════════════════════════════════════════════════
+var players=[],cambios=[],pid=1,subjectId=null;
+document.getElementById('btn-add-player').addEventListener('click',addPlayer);
+document.getElementById('p-name').addEventListener('keydown',function(e){if(e.key==='Enter')addPlayer();});
+document.getElementById('btn-fill15').addEventListener('click',fillDefault15);
+function addPlayer(){
+  var num=parseInt(document.getElementById('p-num').value);
+  var name=document.getElementById('p-name').value.trim();
+  if(!num||!name){showFlash('⚠️ Ingresá número y nombre','#b45309');return;}
+  for(var i=0;i<players.length;i++){if(players[i].num===num&&!players[i].subbed){showFlash('⚠️ Número ya existe','#b45309');return;}}
+  players.push({id:pid++,num:num,name:name,hechos:0,errados:0,subbed:false,subbedBy:''});
+  document.getElementById('p-num').value='';document.getElementById('p-name').value='';
+  renderPlayers();showFlash('✅ #'+num+' '+name);autosaveDraft();
+}
+function fillDefault15(){
+  var pos=['Pilar izq.','Hooker','Pilar der.','Lock','Lock','Ala','Ala','Octavo','Scrum-half','Apertura','Wing izq.','Centro','Centro','Wing der.','Full-back'];
+  for(var i=1;i<=15;i++){
+    var exists=false;
+    for(var j=0;j<players.length;j++){if(players[j].num===i){exists=true;break;}}
+    if(!exists)players.push({id:pid++,num:i,name:pos[i-1],hechos:0,errados:0,subbed:false,subbedBy:''});
+  }
+  renderPlayers();showFlash('✅ Plantel cargado');autosaveDraft();
+}
+function findPlayer(id){for(var i=0;i<players.length;i++){if(players[i].id===id)return players[i];}return null;}
+function playerTackle(id,type){
+  var p=findPlayer(id);if(!p||p.subbed)return;
+  p[type]++;
+  ST.tackles[type]++;
+  document.getElementById(type==='hechos'?'n-t-h':'n-t-e').textContent=ST.tackles[type];
+  updatePbar('tackles','pb-tackles','pl-tackles');
+  addLog('log-tackles',type==='hechos'?'✅ Tackle hecho':'❌ Tackle errado',type==='hechos'?'g':'r');
+  renderPlayers();showFlash(type==='hechos'?'✅ Tackle hecho':'❌ Tackle errado');autosaveDraft();
+}
+function openCambio(id){
+  subjectId=id;var p=findPlayer(id);if(!p)return;
+  document.getElementById('modal-out').textContent='#'+p.num+' '+p.name;
+  document.getElementById('sub-num').value='';document.getElementById('sub-name').value='';
+  document.getElementById('overlay').classList.add('on');
+}
+function closeModal(){document.getElementById('overlay').classList.remove('on');subjectId=null;}
+function confirmCambio(){
+  var inNum=parseInt(document.getElementById('sub-num').value);
+  var inName=document.getElementById('sub-name').value.trim();
+  if(!inNum||!inName){showFlash('⚠️ Ingresá número y nombre','#b45309');return;}
+  var p=findPlayer(subjectId);if(!p)return;
+  var outNum=p.num,outName=p.name;
+  p.subbed=true;p.subbedBy='#'+inNum+' '+inName;
+  players.push({id:pid++,num:inNum,name:inName,hechos:0,errados:0,subbed:false,subbedBy:''});
+  cambios.push({outNum:outNum,outName:outName,inNum:inNum,inName:inName,time:getTs()});
+  closeModal();renderPlayers();renderCambios();
+  showFlash('🔄 Cambio: #'+outNum+' → #'+inNum);autosaveDraft();
+}
+document.getElementById('btn-ok-cambio').addEventListener('click',confirmCambio);
+document.getElementById('btn-cancel-cambio').addEventListener('click',closeModal);
+document.getElementById('sub-name').addEventListener('keydown',function(e){if(e.key==='Enter')confirmCambio();});
+document.getElementById('overlay').addEventListener('click',function(e){if(e.target===this)closeModal();});
+document.getElementById('player-list').addEventListener('click',function(e){
+  var btn=e.target.closest('[data-act]');if(!btn)return;
+  var id=parseInt(btn.getAttribute('data-id'));
+  var act=btn.getAttribute('data-act');
+  if(act==='th')playerTackle(id,'hechos');
+  if(act==='te')playerTackle(id,'errados');
+  if(act==='sub')openCambio(id);
+  if(act==='del'){players=players.filter(function(p){return p.id!==id;});renderPlayers();autosaveDraft();}
+});
+function renderPlayers(){
+  var list=document.getElementById('player-list');
+  var sorted=players.slice().sort(function(a,b){if(a.subbed!==b.subbed)return a.subbed?1:-1;return a.num-b.num;});
+  var html='';
+  for(var i=0;i<sorted.length;i++){
+    var p=sorted[i];var tot=p.hechos+p.errados;var eff=tot?Math.round(p.hechos/tot*100)+'%':'—';
+    var cls=p.subbed?'pcard subbed':'pcard';
+    html+='<div class="'+cls+'">';
+    html+='<div class="pnum">'+p.num+'</div>';
+    html+='<div class="pinfo"><div class="pname">'+p.name+'</div>';
+    if(p.subbed)html+='<div class="psub-lbl">↑ Por '+p.subbedBy+'</div>';
+    else html+='<div class="peff">Efect: '+eff+'</div>';
+    html+='</div><div class="ptackles">';
+    if(!p.subbed){
+      html+='<button class="ptbtn g" data-act="th" data-id="'+p.id+'"><span class="pt-count">'+p.hechos+'</span><span class="pt-lbl">Hecho</span></button>';
+      html+='<button class="ptbtn r" data-act="te" data-id="'+p.id+'"><span class="pt-count">'+p.errados+'</span><span class="pt-lbl">Errado</span></button>';
+      html+='<button class="btn-cambio" data-act="sub" data-id="'+p.id+'">🔄</button>';
+    }
+    html+='</div><button class="btn-del" data-act="del" data-id="'+p.id+'">✕</button></div>';
+  }
+  list.innerHTML=html;
+}
+function renderCambios(){
+  if(!cambios.length)return;
+  document.getElementById('cambios-wrap').style.display='block';
+  var html='';
+  for(var i=cambios.length-1;i>=0;i--){
+    var c=cambios[i];
+    html+='<div class="cambio-row"><span class="c-out">↓ #'+c.outNum+' '+c.outName+'</span><span class="c-arr">→</span><span class="c-in">↑ #'+c.inNum+' '+c.inName+'</span><span class="c-time">'+c.time+'</span></div>';
+  }
+  document.getElementById('cambios-list').innerHTML=html;
+}
+
+// ═══ RESUMEN ══════════════════════════════════════════════════════════════════
+function pct(a,b){return(a+b)===0?'—':Math.round(a/(a+b)*100)+'%';}
+function renderSummary(){
+  var g=document.getElementById('sum-grid');
+  g.innerHTML=
+    mkCard('💥 Tackles',mkVal(ST.tackles.hechos,'Hechos','go'),mkVal(ST.tackles.errados,'Errados','ba'),mkVal(pct(ST.tackles.hechos,ST.tackles.errados),'Efect.','ne'))+
+    mkCard('🔒 Rucks',mkVal(ST.rucks.ganados,'Ganados','go'),mkVal(ST.rucks.perdidos,'Perdidos','ba'),mkVal(pct(ST.rucks.ganados,ST.rucks.perdidos),'Efect.','ne'))+
+    mkCard('🚩 Lines',mkVal(ST.lines.ganados,'Ganados','go'),mkVal(ST.lines.perdidos,'Perdidos','ba'),mkVal(ST.lines.robados,'Robados','ne'))+
+    mkCard('🤾 Pases',mkVal(ST.pases.completos,'Complet.','go'),mkVal(ST.pases.errados,'Errados','ba'),mkVal(pct(ST.pases.completos,ST.pases.errados),'Efect.','ne'))+
+    mkCard('📏 Metros',mkVal(ST.metros.total,'Total','go'),mkVal(ST.metros.carries.length,'Carries','in'))+
+    mkCard('⚖️ Penales',mkVal(ST.penales.favor,'A favor','go'),mkVal(ST.penales.contra,'En contra','ba'))+
+    mkCard('🏋️ Scrum',mkVal(ST.scrum.ganados,'Ganados','go'),mkVal(ST.scrum.perdidos,'Perdidos','ba'),mkVal(ST.scrum.reiniciados,'Reinic.','ne'))+
+    mkCard('⚖️ Pen.Scrum',mkVal(ST.scrum.pfavor,'A favor','go'),mkVal(ST.scrum.pcontra,'En contra','ba'))+
+    mkCard('🔁 Turnovers',mkVal(ST.turnovers.ganados,'Ganados','go'),mkVal(ST.turnovers.perdidos,'Perdidos','ba'));
+}
+function mkCard(t){var v='';for(var i=1;i<arguments.length;i++)v+=arguments[i];return '<div class="sum-card"><div class="sum-title">'+t+'</div><div class="sum-row">'+v+'</div></div>';}
+function mkVal(v,l,c){return '<div class="sum-val '+c+'"><div class="sum-v">'+v+'</div><div class="sum-l">'+l+'</div></div>';}
+
+// ═══ SAVE MATCH ═══════════════════════════════════════════════════════════════
+function saveMatch(){
+  var eq=document.getElementById('r-equipo').value.trim();
+  var ri=document.getElementById('r-rival').value.trim();
+  var fe=document.getElementById('r-fecha').value||new Date().toISOString().slice(0,10);
+  if(!eq||!ri){showFlash('⚠️ Ingresá equipo y rival','#b45309');return;}
+  var match={
+    id:Date.now(),
+    equipo:eq,rival:ri,fecha:fe,
+    tackles:{hechos:ST.tackles.hechos,errados:ST.tackles.errados},
+    rucks:{ganados:ST.rucks.ganados,perdidos:ST.rucks.perdidos},
+    lines:{ganados:ST.lines.ganados,perdidos:ST.lines.perdidos,robados:ST.lines.robados},
+    pases:{completos:ST.pases.completos,errados:ST.pases.errados},
+    metros:{total:ST.metros.total,carries:ST.metros.carries.length},
+    penales:{favor:ST.penales.favor,contra:ST.penales.contra},
+    scrum:{ganados:ST.scrum.ganados,perdidos:ST.scrum.perdidos,reiniciados:ST.scrum.reiniciados,pfavor:ST.scrum.pfavor,pcontra:ST.scrum.pcontra},
+    turnovers:{ganados:ST.turnovers.ganados,perdidos:ST.turnovers.perdidos},
+    players:players.map(function(p){return{num:p.num,name:p.name,hechos:p.hechos,errados:p.errados,subbed:p.subbed};})
+  };
+  var hist=loadHistory();
+  hist.unshift(match);
+  localStorage.setItem('rugby_history',JSON.stringify(hist));
+  localStorage.removeItem('rugby_draft');
+  showFlash('💾 Partido guardado');
+}
+
+// ═══ HISTORIAL ════════════════════════════════════════════════════════════════
+function loadHistory(){
+  try{var d=localStorage.getItem('rugby_history');return d?JSON.parse(d):[];}catch(e){return [];}
+}
+function renderHistorial(){
+  var hist=loadHistory();
+  var el=document.getElementById('hist-list');
+  if(!hist.length){el.innerHTML='<div class="hist-empty">📋 No hay partidos guardados aún.<br>Guardá un partido desde la pestaña Resumen.</div>';return;}
+  var html='';
+  for(var i=0;i<hist.length;i++){
+    var m=hist[i];
+    var tEff=pct(m.tackles.hechos,m.tackles.errados);
+    var rEff=pct(m.rucks.ganados,m.rucks.perdidos);
+    var lEff=pct(m.lines.ganados,m.lines.perdidos+m.lines.robados);
+    var pEff=pct(m.pases.completos,m.pases.errados);
+    html+='<div class="hist-card" data-hid="'+m.id+'">';
+    html+='<div class="hist-header"><div><div class="hist-match">'+m.equipo+' vs '+m.rival+'</div></div><div class="hist-date">'+formatDate(m.fecha)+'</div></div>';
+    html+='<div class="hist-pills">';
+    html+='<span class="pill g">Tackles '+tEff+'</span>';
+    html+='<span class="pill g">Rucks '+rEff+'</span>';
+    html+='<span class="pill y">Lines '+lEff+'</span>';
+    html+='<span class="pill g">Pases '+pEff+'</span>';
+    html+='<span class="pill b">'+m.metros.total+'m</span>';
+    html+='<span class="pill g">Pen +'+m.penales.favor+'</span>';
+    html+='<span class="pill r">Pen -'+m.penales.contra+'</span>';
+    html+='</div>';
+    html+='<div class="hist-actions">';
+    html+='<button class="btn-hist-exp" data-hact="exp" data-hid="'+m.id+'">⬇ CSV</button>';
+    html+='<button class="btn-hist-del" data-hact="del" data-hid="'+m.id+'">🗑 Borrar</button>';
+    html+='</div></div>';
+  }
+  el.innerHTML=html;
+}
+function formatDate(d){
+  if(!d)return '';
+  var parts=d.split('-');
+  if(parts.length!==3)return d;
+  return parts[2]+'/'+parts[1]+'/'+parts[0];
+}
+
+document.getElementById('hist-list').addEventListener('click',function(e){
+  var btn=e.target.closest('[data-hact]');
+  if(btn){
+    e.stopPropagation();
+    var hid=parseInt(btn.getAttribute('data-hid'));
+    var act=btn.getAttribute('data-hact');
+    if(act==='del'){
+      if(!confirm('¿Borrar este partido?'))return;
+      var hist=loadHistory().filter(function(m){return m.id!==hid;});
+      localStorage.setItem('rugby_history',JSON.stringify(hist));
+      renderHistorial();showFlash('🗑 Partido borrado');
+      return;
+    }
+    if(act==='exp'){
+      var hist=loadHistory();
+      for(var i=0;i<hist.length;i++){if(hist[i].id===hid){exportMatchCSV(hist[i]);return;}}
+      return;
+    }
+  }
+  var card=e.target.closest('.hist-card');
+  if(card){
+    var hid=parseInt(card.getAttribute('data-hid'));
+    var hist=loadHistory();
+    for(var i=0;i<hist.length;i++){if(hist[i].id===hid){openDetail(hist[i]);return;}}
+  }
+});
+
+function openDetail(m){
+  document.getElementById('det-title').textContent=m.equipo+' vs '+m.rival;
+  document.getElementById('det-date').textContent=formatDate(m.fecha);
+  var html='';
+  html+=detSection('💥 Tackles',[
+    {l:'Hechos',v:m.tackles.hechos,c:'g'},{l:'Errados',v:m.tackles.errados,c:'r'},
+    {l:'Efectividad',v:pct(m.tackles.hechos,m.tackles.errados),c:'y'}]);
+  html+=detSection('🔒 Rucks',[
+    {l:'Ganados',v:m.rucks.ganados,c:'g'},{l:'Perdidos',v:m.rucks.perdidos,c:'r'},
+    {l:'Efectividad',v:pct(m.rucks.ganados,m.rucks.perdidos),c:'y'}]);
+  html+=detSection('🚩 Lines',[
+    {l:'Ganados',v:m.lines.ganados,c:'g'},{l:'Perdidos',v:m.lines.perdidos,c:'r'},
+    {l:'Robados',v:m.lines.robados,c:'y'},{l:'Efectividad',v:pct(m.lines.ganados,m.lines.perdidos+m.lines.robados),c:'y'}]);
+  html+=detSection('🤾 Pases',[
+    {l:'Completos',v:m.pases.completos,c:'g'},{l:'Errados',v:m.pases.errados,c:'r'},
+    {l:'Efectividad',v:pct(m.pases.completos,m.pases.errados),c:'y'}]);
+  html+=detSection('📏 Metros',[{l:'Total',v:m.metros.total+'m',c:'g'},{l:'Carries',v:m.metros.carries,c:''}]);
+  html+=detSection('⚖️ Penales',[{l:'A favor',v:m.penales.favor,c:'g'},{l:'En contra',v:m.penales.contra,c:'r'}]);
+  if(m.scrum){
+    html+=detSection('🏋️ Scrum',[
+      {l:'Ganados',v:m.scrum.ganados,c:'g'},{l:'Perdidos',v:m.scrum.perdidos,c:'r'},
+      {l:'Reiniciados',v:m.scrum.reiniciados,c:'y'},{l:'Efectividad',v:pct(m.scrum.ganados,m.scrum.perdidos+m.scrum.reiniciados),c:'y'}]);
+    html+=detSection('⚖️ Penales Scrum',[{l:'A favor',v:m.scrum.pfavor,c:'g'},{l:'En contra',v:m.scrum.pcontra,c:'r'}]);
+  }
+  html+=detSection('🔁 Turnovers',[{l:'Ganados',v:m.turnovers.ganados,c:'g'},{l:'Perdidos',v:m.turnovers.perdidos,c:'r'}]);
+  if(m.players&&m.players.length){
+    html+='<div class="detail-section"><h4>👤 Jugadores</h4>';
+    var active=m.players.filter(function(p){return !p.subbed;});
+    var subbed=m.players.filter(function(p){return p.subbed;});
+    var all=active.concat(subbed);
+    for(var i=0;i<all.length;i++){
+      var p=all[i];var tot=p.hechos+p.errados;var eff=tot?Math.round(p.hechos/tot*100)+'%':'—';
+      html+='<div class="drow"><span class="drow-lbl">#'+p.num+' '+p.name+(p.subbed?' (sal.)':'')+'</span><span class="drow-val g">'+p.hechos+'✅ '+p.errados+'❌ '+eff+'</span></div>';
+    }
+    html+='</div>';
+  }
+  document.getElementById('det-body').innerHTML=html;
+  document.getElementById('detail-overlay').classList.add('on');
+}
+function detSection(title,rows){
+  var html='<div class="detail-section"><h4>'+title+'</h4>';
+  for(var i=0;i<rows.length;i++){
+    html+='<div class="drow"><span class="drow-lbl">'+rows[i].l+'</span><span class="drow-val '+rows[i].c+'">'+rows[i].v+'</span></div>';
+  }
+  html+='</div>';return html;
+}
+function closeDetail(){document.getElementById('detail-overlay').classList.remove('on');}
+document.getElementById('detail-overlay').addEventListener('click',function(e){if(e.target===this)closeDetail();});
+
+// ═══ EXPORT CSV ═══════════════════════════════════════════════════════════════
+function exportCSV(){
+  var eq=document.getElementById('r-equipo').value||'Equipo';
+  var ri=document.getElementById('r-rival').value||'Rival';
+  var fe=document.getElementById('r-fecha').value||new Date().toISOString().slice(0,10);
+  var m={equipo:eq,rival:ri,fecha:fe,tackles:ST.tackles,rucks:ST.rucks,lines:ST.lines,pases:ST.pases,metros:{total:ST.metros.total,carries:ST.metros.carries.length},penales:ST.penales,scrum:ST.scrum,turnovers:ST.turnovers,players:players};
+  exportMatchCSV(m);
+}
+function exportMatchCSV(m){
+  var rows=[
+    ['Partido',m.equipo+' vs '+m.rival],['Fecha',m.fecha],[''],
+    ['CATEGORÍA','DETALLE','VALOR','EFECTIVIDAD'],
+    ['Tackles','Hechos',m.tackles.hechos,pct(m.tackles.hechos,m.tackles.errados)],
+    ['Tackles','Errados',m.tackles.errados,''],
+    ['Rucks','Ganados',m.rucks.ganados,pct(m.rucks.ganados,m.rucks.perdidos)],
+    ['Rucks','Perdidos',m.rucks.perdidos,''],
+    ['Lines','Ganados',m.lines.ganados,pct(m.lines.ganados,m.lines.perdidos+m.lines.robados)],
+    ['Lines','Perdidos',m.lines.perdidos,''],['Lines','Robados',m.lines.robados,''],
+    ['Pases','Completos',m.pases.completos,pct(m.pases.completos,m.pases.errados)],
+    ['Pases','Errados',m.pases.errados,''],
+    ['Metros','Total',m.metros.total,''],['Metros','Carries',m.metros.carries,''],
+    ['Penales','A favor',m.penales.favor,''],['Penales','En contra',m.penales.contra,''],
+    ['Scrum','Ganados',m.scrum?m.scrum.ganados:0,m.scrum?pct(m.scrum.ganados,m.scrum.perdidos+m.scrum.reiniciados):'—'],
+    ['Scrum','Perdidos',m.scrum?m.scrum.perdidos:0,''],
+    ['Scrum','Reiniciados',m.scrum?m.scrum.reiniciados:0,''],
+    ['Scrum','Pen. a favor',m.scrum?m.scrum.pfavor:0,''],
+    ['Scrum','Pen. en contra',m.scrum?m.scrum.pcontra:0,''],
+    ['Turnovers','Ganados',m.turnovers.ganados,''],['Turnovers','Perdidos',m.turnovers.perdidos,''],
+    [''],['JUGADORES','NÚMERO','HECHOS','ERRADOS','EFECTIVIDAD']
+  ];
+  if(m.players){
+    for(var i=0;i<m.players.length;i++){
+      var p=m.players[i];
+      rows.push([p.name,p.num,p.hechos,p.errados,pct(p.hechos,p.errados)]);
+    }
+  }
+  var csv='';for(var i=0;i<rows.length;i++)csv+=rows[i].join(',')+'\n';
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));
+  a.download='rugby-'+m.equipo+'-vs-'+m.rival+'-'+m.fecha+'.csv';
+  a.click();showFlash('✅ CSV Exportado');
+}
+
+// ═══ AUTOSAVE DRAFT ═══════════════════════════════════════════════════════════
+function autosaveDraft(){
+  try{
+    var draft={ST:ST,players:players,cambios:cambios,
+      equipo:document.getElementById('r-equipo').value,
+      rival:document.getElementById('r-rival').value,
+      fecha:document.getElementById('r-fecha').value};
+    localStorage.setItem('rugby_draft',JSON.stringify(draft));
+  }catch(e){}
+}
+function loadDraft(){
+  try{
+    var d=localStorage.getItem('rugby_draft');if(!d)return;
+    var draft=JSON.parse(d);
+    ST=draft.ST;players=draft.players||[];cambios=draft.cambios||[];
+    if(draft.equipo)document.getElementById('r-equipo').value=draft.equipo;
+    if(draft.rival)document.getElementById('r-rival').value=draft.rival;
+    if(draft.fecha)document.getElementById('r-fecha').value=draft.fecha;
+    // Restore counters
+    document.getElementById('n-t-h').textContent=ST.tackles.hechos;
+    document.getElementById('n-t-e').textContent=ST.tackles.errados;
+    document.getElementById('n-r-g').textContent=ST.rucks.ganados;
+    document.getElementById('n-r-p').textContent=ST.rucks.perdidos;
+    document.getElementById('n-l-g').textContent=ST.lines.ganados;
+    document.getElementById('n-l-p').textContent=ST.lines.perdidos;
+    document.getElementById('n-l-r').textContent=ST.lines.robados;
+    document.getElementById('n-p-c').textContent=ST.pases.completos;
+    document.getElementById('n-p-e').textContent=ST.pases.errados;
+    document.getElementById('n-pen-f').textContent=ST.penales.favor;
+    document.getElementById('n-pen-c').textContent=ST.penales.contra;
+    if(ST.scrum){
+      document.getElementById('n-sc-g').textContent=ST.scrum.ganados;
+      document.getElementById('n-sc-p').textContent=ST.scrum.perdidos;
+      document.getElementById('n-sc-r').textContent=ST.scrum.reiniciados;
+      document.getElementById('n-sc-pf').textContent=ST.scrum.pfavor;
+      document.getElementById('n-sc-pc').textContent=ST.scrum.pcontra;
+      updatePbar('scrum','pb-scrum','pl-scrum');
+    }
+    document.getElementById('n-tv-g').textContent=ST.turnovers.ganados;
+    document.getElementById('n-tv-p').textContent=ST.turnovers.perdidos;
+    document.getElementById('m-total').innerHTML=ST.metros.total+'<small>metros</small>';
+    updatePbar('tackles','pb-tackles','pl-tackles');
+    updatePbar('rucks','pb-rucks','pl-rucks');
+    updatePbar('lines','pb-lines','pl-lines');
+    updatePbar('pases','pb-pases','pl-pases');
+    renderPlayers();renderCambios();
+    if(cambios.length)document.getElementById('cambios-wrap').style.display='block';
+  }catch(e){}
+}
+
+// ═══ RESET ════════════════════════════════════════════════════════════════════
+function resetAll(){
+  if(!confirm('¿Empezar nuevo partido? Las estadísticas actuales se perderán si no guardaste.'))return;
+  ST={tackles:{hechos:0,errados:0},rucks:{ganados:0,perdidos:0},lines:{ganados:0,perdidos:0,robados:0},pases:{completos:0,errados:0},metros:{total:0,carries:[]},penales:{favor:0,contra:0},scrum:{ganados:0,perdidos:0,reiniciados:0,pfavor:0,pcontra:0},turnovers:{ganados:0,perdidos:0}};
+  HIST=[];players=[];cambios=[];
+  var ids=['n-t-h','n-t-e','n-r-g','n-r-p','n-l-g','n-l-p','n-l-r','n-p-c','n-p-e','n-pen-f','n-pen-c','n-sc-g','n-sc-p','n-sc-r','n-sc-pf','n-sc-pc','n-tv-g','n-tv-p'];
+  for(var i=0;i<ids.length;i++)document.getElementById(ids[i]).textContent='0';
+  document.getElementById('m-total').innerHTML='0<small>metros</small>';
+  var pb=document.querySelectorAll('.pbar-fill');for(var i=0;i<pb.length;i++)pb[i].style.width='0%';
+  var pl=document.querySelectorAll('.plbl');for(var i=0;i<pl.length;i++)pl[i].textContent='Efectividad: —';
+  var logs=document.querySelectorAll('.log');for(var i=0;i<logs.length;i++)logs[i].innerHTML='';
+  document.getElementById('r-equipo').value='';document.getElementById('r-rival').value='';
+  renderPlayers();
+  document.getElementById('cambios-wrap').style.display='none';
+  document.getElementById('cambios-list').innerHTML='';
+  localStorage.removeItem('rugby_draft');
+  resetTimer();showFlash('🏉 Nuevo partido listo');
+}
+
+// ═══ INIT ═════════════════════════════════════════════════════════════════════
+document.getElementById('r-fecha').value=new Date().toISOString().slice(0,10);
+loadDraft();
+</script>
+
+</body>
+</html>
